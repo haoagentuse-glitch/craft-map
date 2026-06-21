@@ -6,6 +6,9 @@
 let DATA = [];
 const state = { domain: "陶瓷", cat: "", city: "", q: "" };
 
+// 領域頁籤的偏好排序（沒列到的會排在後面）
+const DOMAIN_ORDER = ["陶瓷", "金工", "木工"];
+
 // HTML 跳脫：所有要塞進畫面的資料都先經過這裡，避免被當成 HTML/script 執行
 function esc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, m => ({
@@ -82,11 +85,38 @@ async function loadData() {
     note.textContent = "目前為內建示範資料；接上 Google 試算表後即為社群即時資料。";
   }
   DATA = DATA.filter(d => (d.status || "").trim() === "approved");
+  buildDomains();
   initFilters();
   render();
 }
 
 function curset() { return DATA.filter(d => d.domain === state.domain); }
+
+// ---------- 領域頁籤（資料驅動：試算表有哪些領域就長出哪些頁籤） ----------
+function buildDomains() {
+  const present = [...new Set(DATA.map(d => d.domain).filter(Boolean))];
+  present.sort((a, b) => {
+    const ia = DOMAIN_ORDER.indexOf(a), ib = DOMAIN_ORDER.indexOf(b);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  });
+  // 目前選中的領域若已不存在，改成第一個
+  if (!present.includes(state.domain)) state.domain = present[0] || state.domain;
+
+  const upcoming = (window.CONFIG.UPCOMING_DOMAINS || []).filter(d => !present.includes(d));
+  const cont = document.getElementById("domains");
+  cont.innerHTML =
+    present.map(d => `<div class="domain${d === state.domain ? " active" : ""}" data-domain="${esc(d)}">${esc(d)}</div>`).join("") +
+    upcoming.map(d => `<div class="domain soon" title="即將開放">${esc(d)}<span class="tag">即將推出</span></div>`).join("");
+
+  cont.querySelectorAll(".domain[data-domain]").forEach(el => el.onclick = () => {
+    state.domain = el.dataset.domain;
+    state.cat = ""; state.city = "";            // 切換領域時重置子篩選
+    cont.querySelectorAll(".domain").forEach(x => x.classList.remove("active"));
+    el.classList.add("active");
+    initFilters();
+    render();
+  });
+}
 
 // ---------- 初始化篩選器 ----------
 function initFilters() {
@@ -105,6 +135,7 @@ function initFilters() {
   const cities = [...new Set(set.map(d => d.city))].sort();
   const sel = document.getElementById("city");
   sel.innerHTML = '<option value="">全部地區</option>' + cities.map(c => `<option>${esc(c)}</option>`).join("");
+  sel.value = state.city;
   sel.onchange = () => { state.city = sel.value; render(); };
 }
 
@@ -178,15 +209,15 @@ function addFormHtml() {
   const cats = [...new Set(curset().map(d => d.category))];
   return `
     <h3>新增一家資源</h3>
-    <p class="modal-note">送出後會先進入待審核，由管理者確認後才公開顯示。</p>
+    <p class="modal-note">所有欄位皆必填。送出後會先進入待審核，由管理者確認後才公開顯示。</p>
     <form id="subform">
       <input type="hidden" name="type" value="add">
-      <label>領域<input name="領域" value="${esc(state.domain)}" readonly></label>
-      <label>分類<select name="分類">${cats.map(c => `<option>${esc(c)}</option>`).join("")}</select></label>
+      <label>領域（依目前檢視的領域）<input name="領域" value="${esc(state.domain)}" readonly></label>
+      <label>分類 *<select name="分類" required>${cats.map(c => `<option>${esc(c)}</option>`).join("")}</select></label>
       <label>名稱 *<input name="名稱" required maxlength="60"></label>
-      <label>地址<input name="地址" maxlength="120"></label>
-      <label>聯絡方式<input name="聯絡方式" placeholder="電話或 IG 帳號" maxlength="80"></label>
-      <label>營業項目<input name="營業項目" maxlength="120"></label>
+      <label>地址 *<input name="地址" required maxlength="120"></label>
+      <label>聯絡方式 *<input name="聯絡方式" required placeholder="電話或 IG 帳號" maxlength="80"></label>
+      <label>營業項目 *<input name="營業項目" required maxlength="120"></label>
       <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off">
       <div class="modal-actions">
         <button type="button" data-close>取消</button>
@@ -202,11 +233,11 @@ function reportFormHtml(name) {
     <form id="subform">
       <input type="hidden" name="type" value="report">
       <label>店名<input name="店名" value="${esc(name)}" readonly></label>
-      <label>問題類型<select name="問題類型">
+      <label>問題類型 *<select name="問題類型" required>
         <option>已歇業</option><option>已搬遷</option>
         <option>電話或地址有誤</option><option>其他</option>
       </select></label>
-      <label>正確資訊或說明<textarea name="說明" rows="3" maxlength="300"></textarea></label>
+      <label>正確資訊或說明 *<textarea name="說明" rows="3" required maxlength="300"></textarea></label>
       <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off">
       <div class="modal-actions">
         <button type="button" data-close>取消</button>
@@ -240,7 +271,7 @@ async function handleSubmit(form) {
       body: params.toString()
     });
     document.getElementById("modalBody").innerHTML =
-      '<div class="modal-done"><h3>已送出 🙌</h3><p>感謝你的貢獻！通過審核後就會顯示在地圖上。</p><button class="primary" data-close>關閉</button></div>';
+      '<div class="modal-done"><h3>已送出 🙌</h3><p>感謝你的貢獻！通過審核後就會顯示。</p><button class="primary" data-close>關閉</button></div>';
   } catch (err) {
     btn.disabled = false; btn.textContent = "送出";
     alert("送出失敗，請稍後再試一次。");
@@ -251,13 +282,11 @@ async function handleSubmit(form) {
 document.getElementById("q").addEventListener("input", e => { state.q = e.target.value; render(); });
 document.getElementById("fab").onclick = onAdd;
 
-// 卡片上的「回報有誤」（事件委派）
 document.getElementById("grid").addEventListener("click", e => {
   const b = e.target.closest(".report");
   if (b) onReport(b.dataset.name || "");
 });
 
-// 彈窗：關閉與送出
 const modalEl = document.getElementById("modal");
 modalEl.addEventListener("click", e => {
   if (e.target === modalEl || e.target.id === "modalClose" || e.target.hasAttribute("data-close")) closeModal();
