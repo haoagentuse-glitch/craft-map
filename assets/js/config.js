@@ -4,7 +4,7 @@
 window.CONFIG = {
   // 1) 把 Google 試算表「檔案 → 共用 → 發布到網路」取得的 CSV 連結貼在這裡。
   //    留空字串時，網頁會改用內建資料（assets/js/data.js）。
-  SHEET_CSV_URL: "",
+  SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSM6uq3sP5DuHXxa6i9wWVfMkmS6gdQYTY9OoheQttaiwoir78CPnHUgGSKKIk8Sng8ceHltJiU_X4Z/pub?gid=1140260398&single=true&output=csv",
 
   // 2) 換成你的 Google 表單投稿連結（新增一家店）。
   FORM_URL: "https://forms.gle/在這裡貼上你的新增表單連結",
