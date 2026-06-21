@@ -95,10 +95,10 @@ async function loadData() {
   }
   DATA = DATA.filter(d => (d.status || "").trim() === "approved");
   // 隨機排序：每次載入打散順序，避免固定置頂像廣告
-  for (let i = DATA.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [DATA[i], DATA[j]] = [DATA[j], DATA[i]];
-  }
+  // for (let i = DATA.length - 1; i > 0; i--) {
+  //   const j = Math.floor(Math.random() * (i + 1));
+  //   [DATA[i], DATA[j]] = [DATA[j], DATA[i]];
+  // }
   buildDomains();
   initFilters();
   render();
