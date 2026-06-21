@@ -185,3 +185,11 @@ main{max-width:1040px;margin:0 auto;padding:0 20px 100px}
   margin-top:14px;background:var(--clay);color:#fff;border:none;
   border-radius:10px;padding:10px 22px;font-size:15px;font-weight:700;cursor:pointer;
 }
+
+/* ===== 線條圖示：統一用主題色 ===== */
+.ic{display:inline-flex;align-items:center;justify-content:center;color:var(--clay);opacity:1}
+.ic svg{width:16px;height:16px;display:block}
+.search .ic{color:var(--muted)}
+.meta .ic{width:16px;margin-top:1px}
+.report .ic-sm svg{width:13px;height:13px}
+.report .ic-sm{color:inherit;vertical-align:-2px}

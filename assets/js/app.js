@@ -17,6 +17,15 @@ function esc(s) {
 }
 function isReal(u) { return !!u && !u.includes("在這裡貼上"); }
 
+// 線條式圖示（用 currentColor 繼承主題色，與整體色調一致）
+const ICONS = {
+  pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z"/></svg>',
+  ig: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>',
+  alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+};
+
+
 // ---------- CSV 解析 ----------
 function parseCSV(text) {
   const rows = [];
@@ -148,7 +157,7 @@ function mapsLink(addr) {
 function reportEnabled() { return isReal(window.CONFIG.SUBMIT_URL) || isReal(window.CONFIG.REPORT_FORM_URL); }
 function reportBtn(name) {
   if (!reportEnabled()) return "";
-  return `<button class="report" data-name="${esc(name)}" title="回報這筆資料有誤（例如倒閉、搬家）">⚠ 回報有誤</button>`;
+  return `<button class="report" data-name="${esc(name)}" title="回報這筆資料有誤（例如倒閉、搬家）"><span class="ic ic-sm">${ICONS.alert}</span> 回報有誤</button>`;
 }
 
 function contactCell(d) {
@@ -156,10 +165,12 @@ function contactCell(d) {
   if (d.contactType === "ig" || /IG|@/.test(d.contact)) {
     const h = (d.contact.match(/@([\w._]+)/) || [])[1];
     const url = h ? ("https://instagram.com/" + h) : null;
-    return `<div class="row"><span class="ic">📷</span>${url ? `<a href="${esc(url)}" target="_blank">${esc(d.contact)}</a>` : esc(d.contact)}</div>`;
+    return `<div class="row"><span class="ic">${ICONS.ig}</span>${url ? `<a href="${esc(url)}" target="_blank">${esc(d.contact)}</a>` : esc(d.contact)}</div>`;
   }
-  const tel = d.contact.replace(/[^0-9+]/g, "");
-  return `<div class="row"><span class="ic">📞</span><a href="tel:${esc(tel)}">${esc(d.contact)}</a></div>`;
+  let tel = d.contact.replace(/[^0-9+]/g, "");
+  // 台灣號碼補回被試算表吃掉的開頭 0，讓「點擊撥號」能正確撥出
+  if (tel && tel[0] !== "0" && tel[0] !== "+") tel = "0" + tel;
+  return `<div class="row"><span class="ic">${ICONS.phone}</span><a href="tel:${esc(tel)}">${esc(d.contact)}</a></div>`;
 }
 
 // ---------- 渲染 ----------
@@ -185,7 +196,7 @@ function render() {
       <div class="top"><h3>${esc(d.name)}</h3><span class="badge">${esc(d.category)}</span></div>
       ${d.items ? `<div class="items">${esc(d.items)}</div>` : ""}
       <div class="meta">
-        ${d.address ? `<div class="row"><span class="ic">📍</span><a href="${esc(mapsLink(d.address))}" target="_blank">${esc(d.address)}</a></div>` : ""}
+        ${d.address ? `<div class="row"><span class="ic">${ICONS.pin}</span><a href="${esc(mapsLink(d.address))}" target="_blank">${esc(d.address)}</a></div>` : ""}
         ${contactCell(d)}
       </div>
       ${foot ? `<div class="cardfoot">${foot}</div>` : ""}
