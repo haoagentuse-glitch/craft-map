@@ -94,6 +94,11 @@ async function loadData() {
     note.textContent = "目前為內建示範資料；接上 Google 試算表後即為社群即時資料。";
   }
   DATA = DATA.filter(d => (d.status || "").trim() === "approved");
+  // 隨機排序：每次載入打散順序，避免固定置頂像廣告
+  for (let i = DATA.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [DATA[i], DATA[j]] = [DATA[j], DATA[i]];
+  }
   buildDomains();
   initFilters();
   render();
