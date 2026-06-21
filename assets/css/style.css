@@ -24,9 +24,11 @@ header{
   padding:22px 20px 0;
 }
 .wrap{max-width:1040px;margin:0 auto}
-.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
 .brand h1{font-size:22px;margin:0;letter-spacing:1px}
-.brand .sub{color:var(--muted);font-size:13px}
+.titles{display:flex;flex-direction:column;line-height:1.18}
+.brand .en{color:var(--muted);font-size:12px;letter-spacing:.6px;text-transform:uppercase}
+.sub{color:var(--muted);font-size:13px;margin:8px 0 0;max-width:760px}
 
 /* ===== 領域切換頁籤 ===== */
 .domains{display:flex;gap:6px;margin-top:16px}
@@ -195,5 +197,5 @@ main{max-width:1040px;margin:0 auto;padding:0 20px 100px}
 .report .ic-sm{color:inherit;vertical-align:-2px}
 
 /* ===== 標頭 logo ===== */
-.brand .logo{width:30px;height:30px;align-self:center;display:block}
-@media(max-width:520px){ .brand .logo{width:26px;height:26px} }
+.brand .logo{width:38px;height:38px;display:block;flex:none}
+@media(max-width:520px){ .brand .logo{width:32px;height:32px} .brand h1{font-size:19px} .brand .en{font-size:11px} }

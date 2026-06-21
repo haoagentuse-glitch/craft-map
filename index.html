@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,22 +8,32 @@
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
+
 <body>
   <header>
     <div class="wrap">
       <div class="brand">
-        <img class="logo" src="assets/favicon.svg" alt="工藝資源地圖標誌" width="30" height="30">
-        <h1>工藝資源地圖</h1>
-        <span class="sub">任何人都能成為協作者 ｜ 初始資料來源：國立臺灣藝術大學 工藝設計學系</span>
+        <img class="logo" src="assets/favicon.svg" alt="工藝資源地圖標誌" width="38" height="38">
+        <div class="titles">
+          <h1>工藝資源地圖</h1>
+          <span class="en">Craft Resource Directory</span>
+        </div>
       </div>
+      <p class="sub">任何人都能成為協作者 ｜ 初始資料來源：國立臺灣藝術大學 工藝設計學系</p>
       <div class="domains" id="domains"></div>
       <div class="toolbar">
         <div class="searchrow">
           <label class="search">
-            <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+            <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="7" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg></span>
             <input id="q" type="search" placeholder="搜尋名稱、營業項目、地址…">
           </label>
-          <select id="city"><option value="">全部地區</option></select>
+          <select id="city">
+            <option value="">全部地區</option>
+          </select>
         </div>
         <div class="chips" id="cats"></div>
       </div>
@@ -51,4 +62,5 @@
   <script src="assets/js/data.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
+
 </html>
