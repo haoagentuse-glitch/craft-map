@@ -145,3 +145,43 @@ main{max-width:1040px;margin:0 auto;padding:0 20px 100px}
   .brand h1{font-size:19px}
   .domain{padding:9px 14px;font-size:14px}
 }
+
+/* ===== 站內新增／回報彈窗 ===== */
+.modal{
+  position:fixed;inset:0;background:rgba(40,28,18,.45);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;z-index:1000;
+}
+.modal-card{
+  background:var(--card);border-radius:16px;width:100%;max-width:440px;
+  max-height:90vh;overflow:auto;padding:24px 22px 20px;position:relative;
+  box-shadow:0 12px 40px rgba(40,28,18,.35);
+}
+.modal-x{
+  position:absolute;top:12px;right:14px;border:none;background:none;
+  font-size:24px;line-height:1;color:var(--muted);cursor:pointer;
+}
+.modal-card h3{margin:0 0 4px;font-size:19px}
+.modal-note{color:var(--muted);font-size:13px;margin:0 0 16px}
+#subform{display:flex;flex-direction:column;gap:12px}
+#subform label{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted)}
+#subform input,#subform select,#subform textarea{
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+  font-size:15px;color:var(--ink);font-family:inherit;background:#fff;outline:none;
+}
+#subform input:focus,#subform select:focus,#subform textarea:focus{border-color:var(--clay)}
+#subform .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:6px}
+.modal-actions button{
+  border:1px solid var(--line);background:var(--sand);color:var(--ink);
+  border-radius:10px;padding:10px 18px;font-size:15px;cursor:pointer;font-family:inherit;
+}
+.modal-actions button.primary{background:var(--clay);color:#fff;border-color:var(--clay);font-weight:700}
+.modal-actions button.primary:hover{background:var(--clay-dark)}
+.modal-actions button:disabled{opacity:.6;cursor:default}
+.modal-done{text-align:center;padding:10px 0}
+.modal-done h3{font-size:20px}
+.modal-done .primary{
+  margin-top:14px;background:var(--clay);color:#fff;border:none;
+  border-radius:10px;padding:10px 22px;font-size:15px;font-weight:700;cursor:pointer;
+}

@@ -12,6 +12,7 @@ function esc(s) {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[m]));
 }
+function isReal(u) { return !!u && !u.includes("在這裡貼上"); }
 
 // ---------- CSV 解析 ----------
 function parseCSV(text) {
@@ -51,7 +52,7 @@ function cityOf(addr) {
   return "其他";
 }
 
-// ---------- 欄位對照：Google 表單自動產生中文標題，這裡一併接受 ----------
+// ---------- 欄位對照：表單/試算表的中文標題一併接受 ----------
 const KEYMAP = { "領域": "domain", "分類": "category", "名稱": "name", "店名": "name", "縣市": "city", "地區": "city", "地址": "address", "聯絡方式": "contact", "電話": "contact", "營業項目": "items", "項目": "items", "狀態": "status" };
 function normalize(raw) {
   return raw.map(r => {
@@ -112,16 +113,11 @@ function mapsLink(addr) {
   return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(addr);
 }
 
-// 回報有誤連結：可選擇帶入店名
-function reportLink(name) {
-  const base = window.CONFIG.REPORT_FORM_URL;
-  if (!base) return "";
-  let url = base;
-  const entry = window.CONFIG.REPORT_NAME_ENTRY;
-  if (entry) {
-    url += (base.includes("?") ? "&" : "?") + "usp=pp_url&" + entry + "=" + encodeURIComponent(name);
-  }
-  return `<a class="report" href="${esc(url)}" target="_blank" title="回報這筆資料有誤（例如倒閉、搬家）">⚠ 回報有誤</a>`;
+// 是否顯示「回報有誤」
+function reportEnabled() { return isReal(window.CONFIG.SUBMIT_URL) || isReal(window.CONFIG.REPORT_FORM_URL); }
+function reportBtn(name) {
+  if (!reportEnabled()) return "";
+  return `<button class="report" data-name="${esc(name)}" title="回報這筆資料有誤（例如倒閉、搬家）">⚠ 回報有誤</button>`;
 }
 
 function contactCell(d) {
@@ -152,7 +148,7 @@ function render() {
     return;
   }
   g.innerHTML = list.map(d => {
-    const foot = reportLink(d.name);
+    const foot = reportBtn(d.name);
     return `
     <div class="card">
       <div class="top"><h3>${esc(d.name)}</h3><span class="badge">${esc(d.category)}</span></div>
@@ -166,8 +162,109 @@ function render() {
   }).join("");
 }
 
+// ============================================================
+//  站內新增／回報彈窗
+// ============================================================
+function openModal(html) {
+  document.getElementById("modalBody").innerHTML = html;
+  document.getElementById("modal").style.display = "flex";
+}
+function closeModal() {
+  document.getElementById("modal").style.display = "none";
+  document.getElementById("modalBody").innerHTML = "";
+}
+
+function addFormHtml() {
+  const cats = [...new Set(curset().map(d => d.category))];
+  return `
+    <h3>新增一家資源</h3>
+    <p class="modal-note">送出後會先進入待審核，由管理者確認後才公開顯示。</p>
+    <form id="subform">
+      <input type="hidden" name="type" value="add">
+      <label>領域<input name="領域" value="${esc(state.domain)}" readonly></label>
+      <label>分類<select name="分類">${cats.map(c => `<option>${esc(c)}</option>`).join("")}</select></label>
+      <label>名稱 *<input name="名稱" required maxlength="60"></label>
+      <label>地址<input name="地址" maxlength="120"></label>
+      <label>聯絡方式<input name="聯絡方式" placeholder="電話或 IG 帳號" maxlength="80"></label>
+      <label>營業項目<input name="營業項目" maxlength="120"></label>
+      <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off">
+      <div class="modal-actions">
+        <button type="button" data-close>取消</button>
+        <button type="submit" class="primary">送出</button>
+      </div>
+    </form>`;
+}
+
+function reportFormHtml(name) {
+  return `
+    <h3>回報資料有誤</h3>
+    <p class="modal-note">回報後由管理者確認，不會立即改動資料。</p>
+    <form id="subform">
+      <input type="hidden" name="type" value="report">
+      <label>店名<input name="店名" value="${esc(name)}" readonly></label>
+      <label>問題類型<select name="問題類型">
+        <option>已歇業</option><option>已搬遷</option>
+        <option>電話或地址有誤</option><option>其他</option>
+      </select></label>
+      <label>正確資訊或說明<textarea name="說明" rows="3" maxlength="300"></textarea></label>
+      <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off">
+      <div class="modal-actions">
+        <button type="button" data-close>取消</button>
+        <button type="submit" class="primary">送出回報</button>
+      </div>
+    </form>`;
+}
+
+function onAdd() {
+  if (isReal(window.CONFIG.SUBMIT_URL)) openModal(addFormHtml());
+  else if (isReal(window.CONFIG.FORM_URL)) window.open(window.CONFIG.FORM_URL, "_blank");
+  else alert("管理者尚未設定新增功能。");
+}
+function onReport(name) {
+  if (isReal(window.CONFIG.SUBMIT_URL)) openModal(reportFormHtml(name));
+  else if (isReal(window.CONFIG.REPORT_FORM_URL)) window.open(window.CONFIG.REPORT_FORM_URL, "_blank");
+}
+
+async function handleSubmit(form) {
+  if (form.website && form.website.value) { closeModal(); return; } // honeypot：機器人填了就默默忽略
+  const fd = new FormData(form);
+  const params = new URLSearchParams();
+  for (const [k, v] of fd) params.append(k, v);
+  const btn = form.querySelector("button[type=submit]");
+  btn.disabled = true; btn.textContent = "送出中…";
+  try {
+    await fetch(window.CONFIG.SUBMIT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+      body: params.toString()
+    });
+    document.getElementById("modalBody").innerHTML =
+      '<div class="modal-done"><h3>已送出 🙌</h3><p>感謝你的貢獻！通過審核後就會顯示在地圖上。</p><button class="primary" data-close>關閉</button></div>';
+  } catch (err) {
+    btn.disabled = false; btn.textContent = "送出";
+    alert("送出失敗，請稍後再試一次。");
+  }
+}
+
 // ---------- 事件綁定 ----------
 document.getElementById("q").addEventListener("input", e => { state.q = e.target.value; render(); });
-document.getElementById("fab").onclick = () => window.open(window.CONFIG.FORM_URL, "_blank");
+document.getElementById("fab").onclick = onAdd;
+
+// 卡片上的「回報有誤」（事件委派）
+document.getElementById("grid").addEventListener("click", e => {
+  const b = e.target.closest(".report");
+  if (b) onReport(b.dataset.name || "");
+});
+
+// 彈窗：關閉與送出
+const modalEl = document.getElementById("modal");
+modalEl.addEventListener("click", e => {
+  if (e.target === modalEl || e.target.id === "modalClose" || e.target.hasAttribute("data-close")) closeModal();
+});
+modalEl.addEventListener("submit", e => {
+  if (e.target.id === "subform") { e.preventDefault(); handleSubmit(e.target); }
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
 
 loadData();
