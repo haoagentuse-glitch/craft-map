@@ -6,6 +6,13 @@
 let DATA = [];
 const state = { domain: "陶瓷", cat: "", city: "", q: "" };
 
+// HTML 跳脫：所有要塞進畫面的資料都先經過這裡，避免被當成 HTML/script 執行
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, m => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[m]));
+}
+
 // ---------- CSV 解析 ----------
 function parseCSV(text) {
   const rows = [];
@@ -86,7 +93,7 @@ function initFilters() {
   const cats = [...new Set(set.map(d => d.category))];
   const cont = document.getElementById("cats");
   cont.innerHTML = '<div class="chip on" data-cat="">全部分類</div>' +
-    cats.map(c => `<div class="chip" data-cat="${c}">${c} <span style="opacity:.6">${set.filter(d => d.category === c).length}</span></div>`).join("");
+    cats.map(c => `<div class="chip" data-cat="${esc(c)}">${esc(c)} <span style="opacity:.6">${set.filter(d => d.category === c).length}</span></div>`).join("");
   cont.querySelectorAll(".chip").forEach(ch => ch.onclick = () => {
     state.cat = ch.dataset.cat;
     cont.querySelectorAll(".chip").forEach(x => x.classList.remove("on"));
@@ -96,7 +103,7 @@ function initFilters() {
 
   const cities = [...new Set(set.map(d => d.city))].sort();
   const sel = document.getElementById("city");
-  sel.innerHTML = '<option value="">全部地區</option>' + cities.map(c => `<option>${c}</option>`).join("");
+  sel.innerHTML = '<option value="">全部地區</option>' + cities.map(c => `<option>${esc(c)}</option>`).join("");
   sel.onchange = () => { state.city = sel.value; render(); };
 }
 
@@ -114,7 +121,7 @@ function reportLink(name) {
   if (entry) {
     url += (base.includes("?") ? "&" : "?") + "usp=pp_url&" + entry + "=" + encodeURIComponent(name);
   }
-  return `<a class="report" href="${url}" target="_blank" title="回報這筆資料有誤（例如倒閉、搬家）">⚠ 回報有誤</a>`;
+  return `<a class="report" href="${esc(url)}" target="_blank" title="回報這筆資料有誤（例如倒閉、搬家）">⚠ 回報有誤</a>`;
 }
 
 function contactCell(d) {
@@ -122,10 +129,10 @@ function contactCell(d) {
   if (d.contactType === "ig" || /IG|@/.test(d.contact)) {
     const h = (d.contact.match(/@([\w._]+)/) || [])[1];
     const url = h ? ("https://instagram.com/" + h) : null;
-    return `<div class="row"><span class="ic">📷</span>${url ? `<a href="${url}" target="_blank">${d.contact}</a>` : d.contact}</div>`;
+    return `<div class="row"><span class="ic">📷</span>${url ? `<a href="${esc(url)}" target="_blank">${esc(d.contact)}</a>` : esc(d.contact)}</div>`;
   }
   const tel = d.contact.replace(/[^0-9+]/g, "");
-  return `<div class="row"><span class="ic">📞</span><a href="tel:${tel}">${d.contact}</a></div>`;
+  return `<div class="row"><span class="ic">📞</span><a href="tel:${esc(tel)}">${esc(d.contact)}</a></div>`;
 }
 
 // ---------- 渲染 ----------
@@ -148,10 +155,10 @@ function render() {
     const foot = reportLink(d.name);
     return `
     <div class="card">
-      <div class="top"><h3>${d.name}</h3><span class="badge">${d.category}</span></div>
-      ${d.items ? `<div class="items">${d.items}</div>` : ""}
+      <div class="top"><h3>${esc(d.name)}</h3><span class="badge">${esc(d.category)}</span></div>
+      ${d.items ? `<div class="items">${esc(d.items)}</div>` : ""}
       <div class="meta">
-        ${d.address ? `<div class="row"><span class="ic">📍</span><a href="${mapsLink(d.address)}" target="_blank">${d.address}</a></div>` : ""}
+        ${d.address ? `<div class="row"><span class="ic">📍</span><a href="${esc(mapsLink(d.address))}" target="_blank">${esc(d.address)}</a></div>` : ""}
         ${contactCell(d)}
       </div>
       ${foot ? `<div class="cardfoot">${foot}</div>` : ""}
