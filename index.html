@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>工藝資源地圖 · 陶瓷</title>
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="brand">
+        <h1>工藝資源地圖</h1>
+        <span class="sub">任何人都能成為協作者 ｜ 初始資料來源：國立臺灣藝術大學 工藝設計學系</span>
+      </div>
+      <div class="domains" id="domains">
+        <div class="domain active" data-domain="陶瓷">陶瓷</div>
+        <div class="domain soon" title="即將開放">金工<span class="tag">即將推出</span></div>
+        <div class="domain soon" title="即將開放">木工<span class="tag">即將推出</span></div>
+      </div>
+      <div class="toolbar">
+        <div class="searchrow">
+          <label class="search">
+            <span class="ic">🔍</span>
+            <input id="q" type="search" placeholder="搜尋名稱、營業項目、地址…">
+          </label>
+          <select id="city"><option value="">全部地區</option></select>
+        </div>
+        <div class="chips" id="cats"></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="count" id="count"></div>
+
+  <main>
+    <div class="grid" id="grid"></div>
+  </main>
+
+  <button class="fab" id="fab">＋ 我發現一家，新增</button>
+  <p class="note" id="srcnote"></p>
+
+  <!-- 載入順序：設定 → 資料 → 程式邏輯 -->
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
