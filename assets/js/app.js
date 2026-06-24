@@ -38,7 +38,8 @@ const ICONS = {
   phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z"/></svg>',
   ig: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>',
   alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-  tip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.79.64-1.47 1.31-2A5 5 0 1 0 8 8.5a5 5 0 0 0 1.6 5.5c.67.53 1.13 1.21 1.31 2"/></svg>'
+  tip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.79.64-1.47 1.31-2A5 5 0 1 0 8 8.5a5 5 0 0 0 1.6 5.5c.67.53 1.13 1.21 1.31 2"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>'
 };
 
 
@@ -179,7 +180,7 @@ function mapsLink(addr) {
 function reportEnabled() { return isReal(window.CONFIG.SUBMIT_URL) || isReal(window.CONFIG.REPORT_FORM_URL); }
 function reportBtn(name) {
   if (!reportEnabled()) return "";
-  return `<button class="report" data-name="${esc(name)}" title="回報這筆資料有誤（例如倒閉、搬家）"><span class="ic ic-sm">${ICONS.alert}</span> 回報有誤</button>`;
+  return `<button class="report" data-name="${esc(name)}" title="協助更新這筆資料：回報有誤、搬家，或補充建議"><span class="ic ic-sm">${ICONS.edit}</span> 協助維護</button>`;
 }
 
 function contactCell(d) {
@@ -274,26 +275,27 @@ function addFormHtml() {
 
 function reportFormHtml(name) {
   return `
-    <h3>回報資料有誤</h3>
-    <p class="modal-note">回報後由管理者確認，不會立即改動資料。</p>
+    <h3>協助維護這筆資料</h3>
+    <p class="modal-note">看到資訊有誤、店家搬遷，或想補充建議都歡迎。以下全部選填，至少填一項即可；送出後由管理者確認。</p>
     <form id="subform">
       <input type="hidden" name="type" value="report">
+      <input type="hidden" name="建議">
       <label>店名<input name="店名" value="${esc(name)}" readonly></label>
-      <label>問題類型 *<select name="問題類型" required>
+      <label>資料有問題嗎？（選填）<select name="問題類型">
+        <option value="">— 沒問題／不選 —</option>
         <option>已歇業</option><option>已搬遷</option>
         <option>電話或地址有誤</option><option>其他</option>
       </select></label>
-      <label>正確資訊或說明 *<textarea name="說明" rows="3" required maxlength="300"></textarea></label>
-      <input type="hidden" name="建議">
       <fieldset class="tipbox">
-        <legend>順便補充建議（選填，給訪客的小提醒）</legend>
+        <legend>補充建議（選填，給訪客的小提醒）</legend>
         ${Object.keys(TIP_GROUPS).map(g => `<label class="tipsel"><span>${esc(g)}</span><select class="tippick"><option value="">— 不選 —</option>${TIP_GROUPS[g].map(t => `<option>${esc(t)}</option>`).join("")}</select></label>`).join("")}
         <label class="tipsel full"><span>其他</span><input type="text" id="tipOther" maxlength="25" placeholder="特殊規則自行補充，最多 25 字"></label>
       </fieldset>
+      <label>說明／補充（選填）<textarea name="說明" rows="3" maxlength="300" placeholder="例如：正確電話、新地址，或其他想補充的資訊"></textarea></label>
       <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off">
       <div class="modal-actions">
         <button type="button" data-close>取消</button>
-        <button type="submit" class="primary">送出回報</button>
+        <button type="submit" class="primary">送出</button>
       </div>
     </form>`;
 }
@@ -327,6 +329,14 @@ async function handleSubmit(form) {
     const tipOther = (form.querySelector("#tipOther")?.value || "").trim();
     if (tipOther) tips.push(tipOther);
     form.querySelector("[name=建議]").value = tips.join("、");
+  }
+
+  // 維護表單：全部選填，但至少要填一項（問題、建議或說明）才送出
+  if (form.type && form.type.value === "report") {
+    const issue = (form.querySelector("[name=問題類型]")?.value || "").trim();
+    const note = (form.querySelector("[name=說明]")?.value || "").trim();
+    const tip = (form.querySelector("[name=建議]")?.value || "").trim();
+    if (!issue && !note && !tip) { alert("請至少填一項（問題類型、建議，或說明）再送出。"); return; }
   }
 
   const fd = new FormData(form);
