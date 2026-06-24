@@ -15,13 +15,14 @@ function splitCats(s) {
   return String(s == null ? "" : s).split(/[｜|]/).map(x => x.trim()).filter(Boolean);
 }
 
-// 建議欄的半標準化短句（資料驅動，要加減就改這個陣列；使用者也可選「其他」自行填寫）
-const TIPS_PRESETS = [
-  "建議先電話預約", "可電話訂購", "歡迎直接前往", "營業時間不固定，先電聯",
-  "付款：現金/轉帳", "僅收現金", "可刷卡",
-  "有最低訂購量", "需先確認庫存", "大宗訂購請先洽詢",
-  "假日公休", "採預約制"
-];
+// 建議欄：把短句依「問題類型」分成幾組（資料驅動，要加減就改這個物件）。
+// 表單每組做一個下拉、可各選一個 → 等於可複選；最後全部合併寫進同一個「建議」欄。
+const TIP_GROUPS = {
+  "聯絡方式": ["建議先電話預約", "可電話訂購", "歡迎直接前往", "營業時間不固定，先電聯"],
+  "付款方式": ["付款：現金/轉帳", "僅收現金", "可刷卡"],
+  "訂購方式": ["有最低訂購量", "需先確認庫存", "大宗訂購請先洽詢"],
+  "預約／營業": ["採預約制", "假日公休"]
+};
 
 // HTML 跳脫：所有要塞進畫面的資料都先經過這裡，避免被當成 HTML/script 執行
 function esc(s) {
@@ -258,14 +259,11 @@ function addFormHtml() {
       <label>地址 *<input name="地址" required maxlength="120"></label>
       <label>聯絡方式 *<input name="聯絡方式" required placeholder="電話或 IG 帳號" maxlength="80"></label>
       <label>營業項目 *<input name="營業項目" required maxlength="120"></label>
-      <label>建議（選填，給訪客的小提醒）
-        <select id="tipSel">
-          <option value="">— 不填 —</option>
-          ${TIPS_PRESETS.map(t => `<option>${esc(t)}</option>`).join("")}
-          <option value="__other__">其他（自行填寫）</option>
-        </select>
-      </label>
-      <input type="text" id="tipOther" maxlength="25" placeholder="自行填寫建議，最多 25 字" style="display:none">
+      <fieldset class="tipbox">
+        <legend>建議（選填，給訪客的小提醒；每組可各選一個）</legend>
+        ${Object.keys(TIP_GROUPS).map(g => `<label class="tipsel"><span>${esc(g)}</span><select class="tippick"><option value="">— 不選 —</option>${TIP_GROUPS[g].map(t => `<option>${esc(t)}</option>`).join("")}</select></label>`).join("")}
+        <label class="tipsel full"><span>其他</span><input type="text" id="tipOther" maxlength="25" placeholder="特殊規則自行補充，最多 25 字"></label>
+      </fieldset>
       <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off">
       <div class="modal-actions">
         <button type="button" data-close>取消</button>
@@ -316,11 +314,10 @@ async function handleSubmit(form) {
     if (!catVal) { alert("請至少勾選一個分類，或在『其他』填寫一個。"); return; }
     form.querySelector("[name=分類]").value = catVal;
 
-    const sel = form.querySelector("#tipSel");
-    const tipVal = sel
-      ? (sel.value === "__other__" ? (form.querySelector("#tipOther")?.value || "").trim() : sel.value)
-      : "";
-    form.querySelector("[name=建議]").value = tipVal;
+    const tips = [...form.querySelectorAll(".tippick")].map(s => s.value.trim()).filter(Boolean);
+    const tipOther = (form.querySelector("#tipOther")?.value || "").trim();
+    if (tipOther) tips.push(tipOther);
+    form.querySelector("[name=建議]").value = tips.join("、");
   }
 
   const fd = new FormData(form);
@@ -358,13 +355,6 @@ modalEl.addEventListener("click", e => {
 });
 modalEl.addEventListener("submit", e => {
   if (e.target.id === "subform") { e.preventDefault(); handleSubmit(e.target); }
-});
-// 建議選「其他」時，顯示自行填寫的輸入框
-modalEl.addEventListener("change", e => {
-  if (e.target.id === "tipSel") {
-    const o = document.getElementById("tipOther");
-    if (o) o.style.display = e.target.value === "__other__" ? "block" : "none";
-  }
 });
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
 
