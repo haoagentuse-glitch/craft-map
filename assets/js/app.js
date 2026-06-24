@@ -9,6 +9,20 @@ const state = { domain: "陶瓷", cat: "", city: "", q: "" };
 // 領域頁籤的偏好排序（沒列到的會排在後面）
 const DOMAIN_ORDER = ["陶瓷", "金工", "木工"];
 
+// 複合類別分隔符：一家店可同時屬於多個類別，用全形｜串接（也相容半形 |）。
+// 注意：類別名稱本身用「、」（如「原料、土、陶藝工具」），所以不能拿「、」當分隔符。
+function splitCats(s) {
+  return String(s == null ? "" : s).split(/[｜|]/).map(x => x.trim()).filter(Boolean);
+}
+
+// 建議欄的半標準化短句（資料驅動，要加減就改這個陣列；使用者也可選「其他」自行填寫）
+const TIPS_PRESETS = [
+  "建議先電話預約", "可電話訂購", "歡迎直接前往", "營業時間不固定，先電聯",
+  "付款：現金/轉帳", "僅收現金", "可刷卡",
+  "有最低訂購量", "需先確認庫存", "大宗訂購請先洽詢",
+  "假日公休", "採預約制"
+];
+
 // HTML 跳脫：所有要塞進畫面的資料都先經過這裡，避免被當成 HTML/script 執行
 function esc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, m => ({
@@ -22,7 +36,8 @@ const ICONS = {
   pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
   phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z"/></svg>',
   ig: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>',
-  alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+  alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  tip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.79.64-1.47 1.31-2A5 5 0 1 0 8 8.5a5 5 0 0 0 1.6 5.5c.67.53 1.13 1.21 1.31 2"/></svg>'
 };
 
 
@@ -65,7 +80,7 @@ function cityOf(addr) {
 }
 
 // ---------- 欄位對照：表單/試算表的中文標題一併接受 ----------
-const KEYMAP = { "領域": "domain", "分類": "category", "名稱": "name", "店名": "name", "縣市": "city", "地區": "city", "地址": "address", "聯絡方式": "contact", "電話": "contact", "營業項目": "items", "項目": "items", "狀態": "status" };
+const KEYMAP = { "領域": "domain", "分類": "category", "名稱": "name", "店名": "name", "縣市": "city", "地區": "city", "地址": "address", "聯絡方式": "contact", "電話": "contact", "營業項目": "items", "項目": "items", "建議": "tips", "小提醒": "tips", "提醒": "tips", "狀態": "status" };
 function normalize(raw) {
   return raw.map(r => {
     const o = {};
@@ -135,10 +150,11 @@ function buildDomains() {
 // ---------- 初始化篩選器 ----------
 function initFilters() {
   const set = curset();
-  const cats = [...new Set(set.map(d => d.category))];
+  // 類別資料驅動：把每筆的複合類別拆開後取唯一值；一家跨多類就會在多個類別都計數
+  const cats = [...new Set(set.flatMap(d => splitCats(d.category)))];
   const cont = document.getElementById("cats");
   cont.innerHTML = '<div class="chip on" data-cat="">全部分類</div>' +
-    cats.map(c => `<div class="chip" data-cat="${esc(c)}">${esc(c)} <span style="opacity:.6">${set.filter(d => d.category === c).length}</span></div>`).join("");
+    cats.map(c => `<div class="chip" data-cat="${esc(c)}">${esc(c)} <span style="opacity:.6">${set.filter(d => splitCats(d.category).includes(c)).length}</span></div>`).join("");
   cont.querySelectorAll(".chip").forEach(ch => ch.onclick = () => {
     state.cat = ch.dataset.cat;
     cont.querySelectorAll(".chip").forEach(x => x.classList.remove("on"));
@@ -182,7 +198,7 @@ function contactCell(d) {
 function render() {
   const q = state.q.trim().toLowerCase();
   let list = curset();
-  if (state.cat) list = list.filter(d => d.category === state.cat);
+  if (state.cat) list = list.filter(d => splitCats(d.category).includes(state.cat));
   if (state.city) list = list.filter(d => d.city === state.city);
   if (q) list = list.filter(d => (d.name + d.items + d.address + d.category).toLowerCase().includes(q));
 
@@ -198,13 +214,14 @@ function render() {
     const foot = reportBtn(d.name);
     return `
     <div class="card">
-      <div class="top"><h3>${esc(d.name)}</h3><span class="badge">${esc(d.category)}</span></div>
+      <div class="top"><h3>${esc(d.name)}</h3><div class="badges">${splitCats(d.category).map(c => `<span class="badge">${esc(c)}</span>`).join("")}</div></div>
       ${d.items ? `<div class="items">${esc(d.items)}</div>` : ""}
       <div class="meta">
         ${d.address ? `<div class="row"><span class="ic">${ICONS.pin}</span><a href="${esc(mapsLink(d.address))}" target="_blank">${esc(d.address)}</a></div>` : ""}
         ${contactCell(d)}
       </div>
       ${foot ? `<div class="cardfoot">${foot}</div>` : ""}
+      ${d.tips ? `<div class="tips"><span class="ic ic-sm">${ICONS.tip}</span><span>${esc(d.tips)}</span></div>` : ""}
     </div>`;
   }).join("");
 }
@@ -222,18 +239,33 @@ function closeModal() {
 }
 
 function addFormHtml() {
-  const cats = [...new Set(curset().map(d => d.category))];
+  // 類別資料驅動：列出目前領域已有的類別（拆開複合類別後的唯一值）
+  const cats = [...new Set(curset().flatMap(d => splitCats(d.category)))];
   return `
     <h3>新增一家資源</h3>
-    <p class="modal-note">所有欄位皆必填。送出後會先進入待審核，由管理者確認後才公開顯示。</p>
+    <p class="modal-note">標示 * 的欄位必填。送出後會先進入待審核，由管理者確認後才公開顯示。</p>
     <form id="subform">
       <input type="hidden" name="type" value="add">
+      <input type="hidden" name="分類">
+      <input type="hidden" name="建議">
       <label>領域（依目前檢視的領域）<input name="領域" value="${esc(state.domain)}" readonly></label>
-      <label>分類 *<select name="分類" required>${cats.map(c => `<option>${esc(c)}</option>`).join("")}</select></label>
+      <fieldset class="catbox">
+        <legend>分類 *（可複選，跨類就勾多個）</legend>
+        ${cats.map(c => `<label class="ck"><input type="checkbox" class="catpick" value="${esc(c)}"> ${esc(c)}</label>`).join("")}
+        <label class="ck full">其他（新類別，多個用｜隔開）<input type="text" id="catOther" maxlength="40" placeholder="找不到合適類別時自行填寫"></label>
+      </fieldset>
       <label>名稱 *<input name="名稱" required maxlength="60"></label>
       <label>地址 *<input name="地址" required maxlength="120"></label>
       <label>聯絡方式 *<input name="聯絡方式" required placeholder="電話或 IG 帳號" maxlength="80"></label>
       <label>營業項目 *<input name="營業項目" required maxlength="120"></label>
+      <label>建議（選填，給訪客的小提醒）
+        <select id="tipSel">
+          <option value="">— 不填 —</option>
+          ${TIPS_PRESETS.map(t => `<option>${esc(t)}</option>`).join("")}
+          <option value="__other__">其他（自行填寫）</option>
+        </select>
+      </label>
+      <input type="text" id="tipOther" maxlength="25" placeholder="自行填寫建議，最多 25 字" style="display:none">
       <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off">
       <div class="modal-actions">
         <button type="button" data-close>取消</button>
@@ -274,6 +306,23 @@ function onReport(name) {
 
 async function handleSubmit(form) {
   if (form.website && form.website.value) { closeModal(); return; } // honeypot：機器人填了就默默忽略
+
+  // 新增表單：把複選分類＋其他自填合併成單一「分類」字串（用｜串），並組出「建議」
+  if (form.type && form.type.value === "add") {
+    const picks = [...form.querySelectorAll(".catpick:checked")].map(c => c.value);
+    const other = (form.querySelector("#catOther")?.value || "").trim();
+    if (other) splitCats(other).forEach(s => picks.push(s));
+    const catVal = [...new Set(picks)].join("｜");
+    if (!catVal) { alert("請至少勾選一個分類，或在『其他』填寫一個。"); return; }
+    form.querySelector("[name=分類]").value = catVal;
+
+    const sel = form.querySelector("#tipSel");
+    const tipVal = sel
+      ? (sel.value === "__other__" ? (form.querySelector("#tipOther")?.value || "").trim() : sel.value)
+      : "";
+    form.querySelector("[name=建議]").value = tipVal;
+  }
+
   const fd = new FormData(form);
   const params = new URLSearchParams();
   for (const [k, v] of fd) params.append(k, v);
@@ -309,6 +358,13 @@ modalEl.addEventListener("click", e => {
 });
 modalEl.addEventListener("submit", e => {
   if (e.target.id === "subform") { e.preventDefault(); handleSubmit(e.target); }
+});
+// 建議選「其他」時，顯示自行填寫的輸入框
+modalEl.addEventListener("change", e => {
+  if (e.target.id === "tipSel") {
+    const o = document.getElementById("tipOther");
+    if (o) o.style.display = e.target.value === "__other__" ? "block" : "none";
+  }
 });
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
 
