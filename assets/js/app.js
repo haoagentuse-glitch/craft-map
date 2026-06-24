@@ -284,6 +284,12 @@ function reportFormHtml(name) {
         <option>電話或地址有誤</option><option>其他</option>
       </select></label>
       <label>正確資訊或說明 *<textarea name="說明" rows="3" required maxlength="300"></textarea></label>
+      <input type="hidden" name="建議">
+      <fieldset class="tipbox">
+        <legend>順便補充建議（選填，給訪客的小提醒）</legend>
+        ${Object.keys(TIP_GROUPS).map(g => `<label class="tipsel"><span>${esc(g)}</span><select class="tippick"><option value="">— 不選 —</option>${TIP_GROUPS[g].map(t => `<option>${esc(t)}</option>`).join("")}</select></label>`).join("")}
+        <label class="tipsel full"><span>其他</span><input type="text" id="tipOther" maxlength="25" placeholder="特殊規則自行補充，最多 25 字"></label>
+      </fieldset>
       <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off">
       <div class="modal-actions">
         <button type="button" data-close>取消</button>
@@ -305,7 +311,7 @@ function onReport(name) {
 async function handleSubmit(form) {
   if (form.website && form.website.value) { closeModal(); return; } // honeypot：機器人填了就默默忽略
 
-  // 新增表單：把複選分類＋其他自填合併成單一「分類」字串（用｜串），並組出「建議」
+  // 新增表單：把複選分類＋其他自填合併成單一「分類」字串（用｜串）
   if (form.type && form.type.value === "add") {
     const picks = [...form.querySelectorAll(".catpick:checked")].map(c => c.value);
     const other = (form.querySelector("#catOther")?.value || "").trim();
@@ -313,7 +319,10 @@ async function handleSubmit(form) {
     const catVal = [...new Set(picks)].join("｜");
     if (!catVal) { alert("請至少勾選一個分類，或在『其他』填寫一個。"); return; }
     form.querySelector("[name=分類]").value = catVal;
+  }
 
+  // 建議：新增與回報表單都有分組下拉，合併成單一字串存進「建議」
+  if (form.querySelector("[name=建議]")) {
     const tips = [...form.querySelectorAll(".tippick")].map(s => s.value.trim()).filter(Boolean);
     const tipOther = (form.querySelector("#tipOther")?.value || "").trim();
     if (tipOther) tips.push(tipOther);
