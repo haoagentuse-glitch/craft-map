@@ -1,0 +1,8 @@
+# 統一使用 LF，避免跨平台換行符號衝突
+* text=auto eol=lf
+
+# 二進位檔不轉換
+*.png binary
+*.jpg binary
+*.svg binary
+*.ico binary
